@@ -75,7 +75,7 @@
         text(yLabel,-yPos-Height/2,xPos-t*1.6+20);                   // y-axis Label  
         rotate(PI/2);                                                // rotate back
         
-        textSize(10); noFill(); stroke(StrokeColor); smooth();strokeWeight(1);
+        textSize(10); noFill(); stroke(StrokeColor); ;strokeWeight(1);
           //Edges
           line(xPos-3,yPos+Height,xPos-3,yPos);                        // y-axis line 
           line(xPos-3,yPos+Height,xPos+Width+5,yPos+Height);           // x-axis line 
@@ -219,7 +219,7 @@
         void DotGraph(float[] x ,float[] y) {
           
          for (int i=0; i<x.length; i++){
-                    strokeWeight(2);stroke(GraphColor);noFill();smooth();
+                    strokeWeight(2);stroke(GraphColor);noFill();
            ellipse(
                    xPos+(x[i]-x[0])/(x[x.length-1]-x[0])*Width,
                    yPos+Height-(y[i]/(yMax-yMin)*Height)+(yMin)/(yMax-yMin)*Height,
@@ -236,7 +236,7 @@
       void LineGraph(float[] x ,float[] y) {
           
          for (int i=0; i<(x.length-1); i++){
-                    strokeWeight(2);stroke(GraphColor);noFill();smooth();
+                    strokeWeight(2);stroke(GraphColor);noFill();
            line(xPos+(x[i]-x[0])/(x[x.length-1]-x[0])*Width,
                                             yPos+Height-(y[i]/(yMax-yMin)*Height)+(yMin)/(yMax-yMin)*Height,
                                             xPos+(x[i+1]-x[0])/(x[x.length-1]-x[0])*Width,
@@ -260,7 +260,7 @@
          
 //         if(!ErrorFlag |true ){    // sort out later!
           
-          beginShape(); strokeWeight(2);stroke(GraphColor);noFill();smooth();
+          beginShape(); strokeWeight(2);stroke(GraphColor);noFill();
          
             for (int i=0; i<x.length; i++){
               

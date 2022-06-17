@@ -4,6 +4,12 @@ import javax.swing.JOptionPane;
 import controlP5.*;
 import processing.serial.*;
 
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
+// Datalogger
+PrintWriter datalog;
+
 // Screen dimensions
 final int screenWidth = 1600;
 final int screenHeight = 900;
@@ -81,24 +87,40 @@ long lastSetpointUpdate = 0;
 int setpointUpdateDelay = 1000 / 5; // 5Hz
 
 // Storage objects
+Textfield fieldYawP;
 float storedYawP;
+Textfield fieldYawI;
 float storedYawI;
+Textfield fieldYawD;
 float storedYawD;
+Textfield fieldYawA;
 float storedYawA;
 
+Textfield fieldPitchP;
 float storedPitchP;
+Textfield fieldPitchI;
 float storedPitchI;
+Textfield fieldPitchD;
 float storedPitchD;
+Textfield fieldPitchA;
 float storedPitchA;
 
+Textfield fieldRollP;
 float storedRollP;
+Textfield fieldRollI;
 float storedRollI;
+Textfield fieldRollD;
 float storedRollD;
+Textfield fieldRollA;
 float storedRollA;
 
+Textfield fieldDepthP;
 float storedDepthP;
+Textfield fieldDepthI;
 float storedDepthI;
+Textfield fieldDepthD;
 float storedDepthD;
+Textfield fieldDepthA;
 float storedDepthA;
 
 // Graph objects
@@ -184,10 +206,13 @@ void connect()
     try
     {
       port = new Serial(this, COMx, 57600); // change baud rate to your liking
+      port.clear();
       port.bufferUntil('\n'); // buffer until CR/LF appears, but not required..
-      connected = true;
-      port.write("H\n");
+
       lastGraphUpdate = millis();
+
+      String timestamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
+      datalog = createWriter(COMx + "_" + timestamp + ".dat");
     }
     catch (Exception e)
     {
@@ -207,6 +232,18 @@ void disconnect()
   
   port.stop();
   connected = false;
+
+  try
+  {
+    datalog.flush();
+    datalog.close();
+  }
+  catch (Exception e)
+  {
+    return;
+  }
+
+  println("Disconnected");
 }
 
 void setup()
@@ -258,6 +295,23 @@ void settings()
   size(screenWidth, screenHeight);
 }
 
+int yprPMin = 0;
+int yprPMax = 20;
+int yprIMin = 0;
+int yprIMax = 10;
+int yprDMin = 0;
+int yprDMax = 3;
+
+int dPMin = 0;
+int dPMax = 300;
+int dIMin = 0;
+int dIMax = 100;
+int dDMin = 0;
+int dDMax = 300;
+
+int antiwindMin = 0;
+int antiwindMax = 50;
+
 void gui()
 {
   cp5 = new ControlP5(this);
@@ -272,7 +326,7 @@ void gui()
             .setBroadcast(false)
             .setPosition(10, 10)
             .setSize(170, 20)
-            .setRange(0, 100)
+            .setRange(yprPMin, yprPMax)
             .setValue(0)
             .setLabel("P")
             .moveTo(yawGains);
@@ -281,7 +335,7 @@ void gui()
             .setBroadcast(false)
             .setPosition(10, 30)
             .setSize(170, 20)
-            .setRange(0, 100)
+            .setRange(yprIMin, yprIMax)
             .setValue(0)
             .setLabel("I")
             .moveTo(yawGains);
@@ -290,7 +344,7 @@ void gui()
             .setBroadcast(false)
             .setPosition(10, 50)
             .setSize(170, 20)
-            .setRange(0, 100)
+            .setRange(yprDMin, yprDMax)
             .setValue(0)
             .setLabel("D")
             .moveTo(yawGains);
@@ -299,7 +353,7 @@ void gui()
                      .setBroadcast(false)
                      .setPosition(10, 70)
                      .setSize(125, 20)
-                     .setRange(0, 500)
+                     .setRange(antiwindMin, antiwindMax)
                      .setValue(0)
                      .setLabel("Anti-Windup")
                      .moveTo(yawGains);
@@ -308,7 +362,7 @@ void gui()
                   .setBroadcast(false)
                   .setPosition(20, 110)
                   .setSize(160, 20)
-                  .setState(true)
+                  .setState(false)
                   .setLabel("Enabled")
                   .moveTo(yawGains);
   yawEnabled.getCaptionLabel().align(CENTER, CENTER);
@@ -329,7 +383,7 @@ void gui()
               .setBroadcast(false)
               .setPosition(10, 10)
               .setSize(170, 20)
-              .setRange(0, 100)
+              .setRange(yprPMin, yprPMax)
               .setValue(0)
               .setLabel("P")
               .moveTo(pitchGains);
@@ -338,7 +392,7 @@ void gui()
               .setBroadcast(false)
               .setPosition(10, 30)
               .setSize(170, 20)
-              .setRange(0, 100)
+              .setRange(yprIMin, yprIMax)
               .setValue(0)
               .setLabel("I")
               .moveTo(pitchGains);
@@ -347,7 +401,7 @@ void gui()
               .setBroadcast(false)
               .setPosition(10, 50)
               .setSize(170, 20)
-              .setRange(0, 100)
+              .setRange(yprDMin, yprDMax)
               .setValue(0)
               .setLabel("D")
               .moveTo(pitchGains);
@@ -356,7 +410,7 @@ void gui()
                      .setBroadcast(false)
                      .setPosition(10, 70)
                      .setSize(125, 20)
-                     .setRange(0, 500)
+                     .setRange(antiwindMin, antiwindMax)
                      .setValue(0)
                      .setLabel("Anti-Windup")
                      .moveTo(pitchGains);
@@ -365,7 +419,7 @@ void gui()
                     .setBroadcast(false)
                     .setPosition(20, 110)
                     .setSize(160, 20)
-                    .setState(true)
+                    .setState(false)
                     .setLabel("Enabled")
                     .moveTo(pitchGains);
   pitchEnabled.getCaptionLabel().align(CENTER, CENTER);
@@ -386,7 +440,7 @@ void gui()
              .setBroadcast(false)
              .setPosition(10, 10)
              .setSize(170, 20)
-             .setRange(0, 100)
+             .setRange(yprPMin, yprPMax)
              .setValue(0)
              .setLabel("P")
              .moveTo(rollGains);
@@ -395,7 +449,7 @@ void gui()
              .setBroadcast(false)
              .setPosition(10, 30)
              .setSize(170, 20)
-             .setRange(0, 100)
+             .setRange(yprIMin, yprIMax)
              .setValue(0)
              .setLabel("I")
              .moveTo(rollGains);
@@ -404,7 +458,7 @@ void gui()
              .setBroadcast(false)
              .setPosition(10, 50)
              .setSize(170, 20)
-             .setRange(0, 100)
+             .setRange(yprDMin, yprDMax)
              .setValue(0)
              .setLabel("D")
              .moveTo(rollGains);
@@ -413,7 +467,7 @@ void gui()
                      .setBroadcast(false)
                      .setPosition(10, 70)
                      .setSize(125, 20)
-                     .setRange(0, 500)
+                     .setRange(antiwindMin, antiwindMax)
                      .setValue(0)
                      .setLabel("Anti-Windup")
                      .moveTo(rollGains);
@@ -422,7 +476,7 @@ void gui()
                    .setBroadcast(false)
                    .setPosition(20, 110)
                    .setSize(160, 20)
-                   .setState(true)
+                   .setState(false)
                    .setLabel("Enabled")
                    .moveTo(rollGains);
   rollEnabled.getCaptionLabel().align(CENTER, CENTER);
@@ -443,7 +497,7 @@ void gui()
               .setBroadcast(false)
               .setPosition(10, 10)
               .setSize(170, 20)
-              .setRange(0, 100)
+              .setRange(dPMin, dPMax)
               .setValue(0)
               .setLabel("P")
               .moveTo(depthGains);
@@ -452,7 +506,7 @@ void gui()
               .setBroadcast(false)
               .setPosition(10, 30)
               .setSize(170, 20)
-              .setRange(0, 100)
+              .setRange(dIMin, dIMax)
               .setValue(0)
               .setLabel("I")
               .moveTo(depthGains);
@@ -461,7 +515,7 @@ void gui()
               .setBroadcast(false)
               .setPosition(10, 50)
               .setSize(170, 20)
-              .setRange(0, 100)
+              .setRange(dDMin, dDMax)
               .setValue(0)
               .setLabel("D")
               .moveTo(depthGains);
@@ -470,7 +524,7 @@ void gui()
                      .setBroadcast(false)
                      .setPosition(10, 70)
                      .setSize(125, 20)
-                     .setRange(0, 500)
+                     .setRange(antiwindMin, antiwindMax)
                      .setValue(0)
                      .setLabel("Anti-Windup")
                      .moveTo(depthGains);
@@ -479,7 +533,7 @@ void gui()
                     .setBroadcast(false)
                     .setPosition(20, 110)
                     .setSize(160, 20)
-                    .setState(true)
+                    .setState(false)
                     .setLabel("Enabled")
                     .moveTo(depthGains);
   depthEnabled.getCaptionLabel().align(CENTER, CENTER);
@@ -611,6 +665,76 @@ void gui()
                .hideScrollbar();
   cp5.addConsole(conArea);
 
+  // Stored gains textboxes
+  fieldYawP = cp5.addTextfield("storedYawP")
+                 .setPosition(40, 500)
+                 .setSize(60, 20)
+                 .setLabel("");
+  fieldYawI = cp5.addTextfield("storedYawI")
+                 .setPosition(40, 520)
+                 .setSize(60, 20)
+                 .setLabel("");
+  fieldYawD = cp5.addTextfield("storedYawD")
+                 .setPosition(40, 540)
+                 .setSize(60, 20)
+                 .setLabel("");
+  fieldYawA = cp5.addTextfield("storedYawA")
+                 .setPosition(40, 560)
+                 .setSize(60, 20)
+                 .setLabel("");
+
+  fieldPitchP = cp5.addTextfield("storedPitchP")
+                 .setPosition(40, 630)
+                 .setSize(60, 20)
+                 .setLabel("");
+  fieldPitchI = cp5.addTextfield("storedPitchI")
+                 .setPosition(40, 650)
+                 .setSize(60, 20)
+                 .setLabel("");
+  fieldPitchD = cp5.addTextfield("storedPitchD")
+                 .setPosition(40, 670)
+                 .setSize(60, 20)
+                 .setLabel("");
+  fieldPitchA = cp5.addTextfield("storedPitchA")
+                 .setPosition(40, 690)
+                 .setSize(60, 20)
+                 .setLabel("");
+
+  fieldRollP = cp5.addTextfield("storedRollP")
+                 .setPosition(140, 500)
+                 .setSize(60, 20)
+                 .setLabel("");
+  fieldRollI = cp5.addTextfield("storedRollI")
+                 .setPosition(140, 520)
+                 .setSize(60, 20)
+                 .setLabel("");
+  fieldRollD = cp5.addTextfield("storedRollD")
+                 .setPosition(140, 540)
+                 .setSize(60, 20)
+                 .setLabel("");
+  fieldRollA = cp5.addTextfield("storedRollA")
+                 .setPosition(140, 560)
+                 .setSize(60, 20)
+                 .setLabel("");
+
+  fieldDepthP = cp5.addTextfield("storedDepthP")
+                 .setPosition(140, 630)
+                 .setSize(60, 20)
+                 .setLabel("");
+  fieldDepthI = cp5.addTextfield("storedDepthI")
+                 .setPosition(140, 650)
+                 .setSize(60, 20)
+                 .setLabel("");
+  fieldDepthD = cp5.addTextfield("storedDepthD")
+                 .setPosition(140, 670)
+                 .setSize(60, 20)
+                 .setLabel("");
+  fieldDepthA = cp5.addTextfield("storedDepthA")
+                 .setPosition(140, 690)
+                 .setSize(60, 20)
+                 .setLabel("");
+
+
   cp5.setAutoDraw(false);
 
   // Add graphs
@@ -651,7 +775,7 @@ void gui()
   depthGraph.xMax = 0;
   depthGraph.xMin = -5;
   depthGraph.yMax = 0;
-  depthGraph.yMin = -10;
+  depthGraph.yMin = 2;
   depthGraph.StrokeColor = foregroundColor;
 }
 
@@ -681,124 +805,170 @@ void update()
 
 void serialEvent(Serial p)
 {
-  // Buffer has reached linefeed, process incoming data
-  String s = p.readStringUntil('\n').trim();
-
-  if(s.length() > 0)
+  try
   {
-    if(s.charAt(0) == '/')
+    // Buffer has reached linefeed, process incoming data
+    String s = p.readStringUntil('\n');
+    if(s == null) return;
+    s = s.trim();
+
+    if(!connected && s.length() > 0)
     {
-      // Incoming data, parse but do not display
-      String[] t;
-      switch(s.charAt(1))
+      if(s.charAt(0) == '/' && s.charAt(s.length() - 1) == '/')
       {
-        case 'A':
-          armed = true;
-          println(s);
-          break;
-        case 'F':
-          armed = false;
-          println(s);
-          break;
-        case 'T':
-          // String is telemetry, display
-          t = split(s.substring(2, s.length() - 1), ',');
-          
-          yaw = float(t[0]);
-          pitch = float(t[1]);
-          roll = float(t[2]);
-          depth = float(t[3]);
-
-          thrustFL = int(t[4]);
-          thrustML = int(t[5]);
-          thrustRL = int(t[6]);
-          thrustFR = int(t[7]);
-          thrustMR = int(t[8]);
-          thrustRR = int(t[9]);
-          break;
-        case 'Y':
-          t = split(s.substring(2, s.length() - 1), ',');
-
-          yawP.setValue(float(t[0]) / 100);
-          yawI.setValue(float(t[1]) / 100);
-          yawD.setValue(float(t[2]) / 100);
-          yawAntiwindup.setValue(float(t[3]) / 100);
-
-          if(int(t[0]) == 0 && int(t[1]) == 0 && int(t[2]) == 0 && int(t[3]) == 0)
-          {
-            yawEnabled.setState(false);
-          }
-          else
-          {
-            yawEnabled.setState(true);
-          }
-          
-          println(s);
-          break;
-        case 'P':
-          t = split(s.substring(2, s.length() - 1), ',');
-
-          pitchP.setValue(float(t[0]) / 100);
-          pitchI.setValue(float(t[1]) / 100);
-          pitchD.setValue(float(t[2]) / 100);
-          pitchAntiwindup.setValue(float(t[3]) / 100);
-
-          if(int(t[0]) == 0 && int(t[1]) == 0 && int(t[2]) == 0 && int(t[3]) == 0)
-          {
-            pitchEnabled.setState(false);
-          }
-          else
-          {
-            pitchEnabled.setState(true);
-          }
-          
-          println(s);
-          break;
-        case 'R':
-          t = split(s.substring(2, s.length() - 1), ',');
-
-          rollP.setValue(float(t[0]) / 100);
-          rollI.setValue(float(t[1]) / 100);
-          rollD.setValue(float(t[2]) / 100);
-          rollAntiwindup.setValue(float(t[3]) / 100);
-
-          if(int(t[0]) == 0 && int(t[1]) == 0 && int(t[2]) == 0 && int(t[3]) == 0)
-          {
-            rollEnabled.setState(false);
-          }
-          else
-          {
-            rollEnabled.setState(true);
-          }
-          
-          println(s);
-          break;
-        case 'D':
-          t = split(s.substring(2, s.length() - 1), ',');
-
-          depthP.setValue(float(t[0]) / 100);
-          depthI.setValue(float(t[1]) / 100);
-          depthD.setValue(float(t[2]) / 100);
-          depthAntiwindup.setValue(float(t[3]) / 100);
-
-          if(int(t[0]) == 0 && int(t[1]) == 0 && int(t[2]) == 0 && int(t[3]) == 0)
-          {
-            depthEnabled.setState(false);
-          }
-          else
-          {
-            depthEnabled.setState(true);
-          }
-          
-          println(s);
-          break;
+        if(s.length() > 1 && s.charAt(1) == 'I')
+        {
+          connected = true;
+        }
       }
     }
-    else
+    else if(connected && s.length() > 0)
     {
-      // Incoming message, display
-      println(s);
+      datalog.println(s);
+
+      if(s.charAt(0) == '/' && s.charAt(s.length() - 1) == '/')
+      {
+        // Incoming data, parse but do not display
+        String[] t;
+        switch(s.charAt(1))
+        {
+          case 'A':
+            armed = true;
+            println(s);
+            break;
+          case 'F':
+            armed = false;
+            println(s);
+            break;
+          case 'T':
+            // String is telemetry, display
+            t = split(s.substring(2, s.length() - 1), ',');
+            
+            yaw = float(t[0]);
+            if(yaw > 180) yaw -= 360;
+            pitch = float(t[1]);
+            roll = float(t[2]);
+            depth = float(t[3]);
+
+            thrustFL = int(t[4]);
+            thrustML = int(t[5]);
+            thrustRL = int(t[6]);
+            thrustFR = int(t[7]);
+            thrustMR = int(t[8]);
+            thrustRR = int(t[9]);
+            break;
+          case 'Y':
+            println(s);
+
+            if(s.charAt(2) == 'D')
+            {
+              yawP.setValue(0);
+              yawI.setValue(0);
+              yawD.setValue(0);
+              yawAntiwindup.setValue(0);
+              yawEnabled.setState(false);
+            }
+            else
+            {
+              t = split(s.substring(2, s.length() - 1), ',');
+
+              yawP.setValue(float(t[0]) / 100);
+              yawI.setValue(float(t[1]) / 100);
+              yawD.setValue(float(t[2]) / 100);
+              yawAntiwindup.setValue(float(t[3]) / 100);
+
+              yawEnabled.setState(true);
+            }
+
+            break;
+          case 'P':
+            println(s);
+
+            if(s.charAt(2) == 'D')
+            {
+              pitchP.setValue(0);
+              pitchI.setValue(0);
+              pitchD.setValue(0);
+              pitchAntiwindup.setValue(0);
+              pitchEnabled.setState(false);
+            }
+            else
+            {
+              t = split(s.substring(2, s.length() - 1), ',');
+
+              pitchP.setValue(float(t[0]) / 100);
+              pitchI.setValue(float(t[1]) / 100);
+              pitchD.setValue(float(t[2]) / 100);
+              pitchAntiwindup.setValue(float(t[3]) / 100);
+
+              pitchEnabled.setState(true);
+            }
+            
+            break;
+          case 'R':
+            println(s);
+
+            if(s.charAt(2) == 'D')
+            {
+              rollP.setValue(0);
+              rollI.setValue(0);
+              rollD.setValue(0);
+              rollAntiwindup.setValue(0);
+              rollEnabled.setState(false);
+            }
+            else
+            {
+              t = split(s.substring(2, s.length() - 1), ',');
+
+              rollP.setValue(float(t[0]) / 100);
+              rollI.setValue(float(t[1]) / 100);
+              rollD.setValue(float(t[2]) / 100);
+              rollAntiwindup.setValue(float(t[3]) / 100);
+
+              rollEnabled.setState(true);
+            }
+            
+            break;
+          case 'D':
+            println(s);
+
+            if(s.charAt(2) == 'D')
+            {
+              depthP.setValue(0);
+              depthI.setValue(0);
+              depthD.setValue(0);
+              depthAntiwindup.setValue(0);
+              depthEnabled.setState(false);
+            }
+            else
+            {
+              t = split(s.substring(2, s.length() - 1), ',');
+
+              depthP.setValue(float(t[0]) / 100);
+              depthI.setValue(float(t[1]) / 100);
+              depthD.setValue(float(t[2]) / 100);
+              depthAntiwindup.setValue(float(t[3]) / 100);
+              
+              depthEnabled.setState(true);
+            }
+            
+            break;
+        }
+      }
+      else if (s.charAt(0) == '/' || s.charAt(s.length() - 1) == '/')
+      {
+        println("Discarding partial telemetry string: " + s);
+      }
+      else
+      {
+        // Incoming message, display
+        println(s);
+      }
     }
+  }
+  catch (Exception e)
+  {
+    e.printStackTrace();
   }
 }
 
@@ -828,60 +998,34 @@ void draw()
     textAlign(CENTER, BOTTOM);
     
     text("Yaw", 60, 490);
-    text("Pitch", 60, 570);
+    text("Pitch", 60, 620);
     text("Roll", 160, 490);
-    text("Depth", 160, 570);
+    text("Depth", 160, 620);
 
-    textAlign(LEFT, BOTTOM);
+    textAlign(RIGHT, CENTER);
 
-    text("P:", 30, 505);
-    text("I:", 30, 520);
-    text("D:", 30, 535);
-    text("A:", 30, 550);
+    text("P:", 30, 510);
+    text("I:", 30, 530);
+    text("D:", 30, 550);
+    text("A:", 30, 570);
 
-    text("P:", 30, 585);
-    text("I:", 30, 600);
-    text("D:", 30, 615);
-    text("A:", 30, 630);
+    text("P:", 30, 640);
+    text("I:", 30, 660);
+    text("D:", 30, 680);
+    text("A:", 30, 700);
 
-    text("P:", 130, 505);
-    text("I:", 130, 520);
-    text("D:", 130, 535);
-    text("A:", 130, 550);
+    text("P:", 130, 510);
+    text("I:", 130, 530);
+    text("D:", 130, 550);
+    text("A:", 130, 570);
 
-    text("P:", 130, 585);
-    text("I:", 130, 600);
-    text("D:", 130, 615);
-    text("A:", 130, 630);
-
-    textAlign(RIGHT, BOTTOM);
-
-    text(nf(storedYawP, 0, 2), 90, 505);
-    text(nf(storedYawI, 0, 2), 90, 520);
-    text(nf(storedYawD, 0, 2), 90, 535);
-    text(nf(storedYawA, 0, 2), 90, 550);
-
-    text(nf(storedPitchP, 0, 2), 90, 585);
-    text(nf(storedPitchI, 0, 2), 90, 600);
-    text(nf(storedPitchD, 0, 2), 90, 615);
-    text(nf(storedPitchA, 0, 2), 90, 630);
-
-    text(nf(storedRollP, 0, 2), 190, 505);
-    text(nf(storedRollI, 0, 2), 190, 520);
-    text(nf(storedRollD, 0, 2), 190, 535);
-    text(nf(storedRollA, 0, 2), 190, 550);
-
-    text(nf(storedDepthP, 0, 2), 190, 585);
-    text(nf(storedDepthI, 0, 2), 190, 600);
-    text(nf(storedDepthD, 0, 2), 190, 615);
-    text(nf(storedDepthA, 0, 2), 190, 630);
+    text("P:", 130, 640);
+    text("I:", 130, 660);
+    text("D:", 130, 680);
+    text("A:", 130, 700);
   }
 
   cp5.draw();
-
-  textAlign(LEFT, TOP);
-  textFont(itemFont);
-  text(frameRate, 10, 10);
 
   // Draw thruster graphic
   imageMode(CENTER);
@@ -971,7 +1115,7 @@ void draw()
     text("SAFE", 900, 650);
   }
 
-  // Draw serial port
+  // Draw serial port 
   fill(foregroundColor);
   noStroke();
   textFont(sectionFont);
@@ -1070,8 +1214,11 @@ void setpointSend()
 {
   if(notConnected()) return;
 
+  float yawSetVal = yawSetpoint.getValue();
+  if(yawSetVal < 0) yawSetVal += 360;
+
   // Make sure we have latest value
-  port.write("E" + round(yawSetpoint.getValue() * 100) +
+  port.write("E" + round(yawSetVal * 100) +
              "," + round(pitchRollSetpoint.getArrayValue()[1] * 100) +
              "," + round(pitchRollSetpoint.getArrayValue()[0] * 100) +
              "," + round(depthSetpoint.getValue() * 100) +
@@ -1081,47 +1228,99 @@ void setpointSend()
 void saveGains()
 {
   storedYawP = yawP.getValue();
+  fieldYawP.setText(str(storedYawP));
   storedYawI = yawI.getValue();
+  fieldYawI.setText(str(storedYawI));
   storedYawD = yawD.getValue();
+  fieldYawD.setText(str(storedYawD));
   storedYawA = yawAntiwindup.getValue();
+  fieldYawA.setText(str(storedYawA));
 
   storedPitchP = pitchP.getValue();
+  fieldPitchP.setText(str(storedPitchP));
   storedPitchI = pitchI.getValue();
+  fieldPitchI.setText(str(storedPitchI));
   storedPitchD = pitchD.getValue();
+  fieldPitchD.setText(str(storedPitchD));
   storedPitchA = pitchAntiwindup.getValue();
+  fieldPitchA.setText(str(storedPitchA));
   
   storedRollP = rollP.getValue();
+  fieldRollP.setText(str(storedRollP));
   storedRollI = rollI.getValue();
+  fieldRollI.setText(str(storedRollI));
   storedRollD = rollD.getValue();
+  fieldRollD.setText(str(storedRollD));
   storedRollA = rollAntiwindup.getValue();
+  fieldRollA.setText(str(storedRollA));
   
   storedDepthP = depthP.getValue();
+  fieldDepthP.setText(str(storedDepthP));
   storedDepthI = depthI.getValue();
+  fieldDepthI.setText(str(storedDepthI));
   storedDepthD = depthD.getValue();
+  fieldDepthD.setText(str(storedDepthD));
   storedDepthA = depthAntiwindup.getValue();
+  fieldDepthA.setText(str(storedDepthA));
 }
 
 void loadGains()
 {
-  yawP.setValue(storedYawP);
-  yawI.setValue(storedYawI);
-  yawD.setValue(storedYawD);
-  yawAntiwindup.setValue(storedYawA);
+  try
+  {
+    storedYawP = float(fieldYawP.getText());
+    storedYawI = float(fieldYawI.getText());
+    storedYawD = float(fieldYawD.getText());
+    storedYawA = float(fieldYawA.getText());
 
-  pitchP.setValue(storedPitchP);
-  pitchI.setValue(storedPitchI);
-  pitchD.setValue(storedPitchD);
-  pitchAntiwindup.setValue(storedPitchA);
-  
-  rollP.setValue(storedRollP);
-  rollI.setValue(storedRollI);
-  rollD.setValue(storedRollD);
-  rollAntiwindup.setValue(storedRollA);
-  
-  depthP.setValue(storedDepthP);
-  depthI.setValue(storedDepthI);
-  depthD.setValue(storedDepthD);
-  depthAntiwindup.setValue(storedDepthA);
+    storedPitchP = float(fieldPitchP.getText());
+    storedPitchI = float(fieldPitchI.getText());
+    storedPitchD = float(fieldPitchD.getText());
+    storedPitchA = float(fieldPitchA.getText());
+
+    storedRollP = float(fieldRollP.getText());
+    storedRollI = float(fieldRollI.getText());
+    storedRollD = float(fieldRollD.getText());
+    storedRollA = float(fieldRollA.getText());
+
+    storedDepthP = float(fieldDepthP.getText());
+    storedDepthI = float(fieldDepthI.getText());
+    storedDepthD = float(fieldDepthD.getText());
+    storedDepthA = float(fieldDepthA.getText());
+
+    if(Float.isNaN(storedYawP) || Float.isNaN(storedYawI) || Float.isNaN(storedYawD) || Float.isNaN(storedYawA)
+    || Float.isNaN(storedPitchP) || Float.isNaN(storedPitchI) || Float.isNaN(storedPitchD) || Float.isNaN(storedPitchA)
+    || Float.isNaN(storedRollP) || Float.isNaN(storedRollI) || Float.isNaN(storedRollD) || Float.isNaN(storedRollA)
+    || Float.isNaN(storedDepthP) || Float.isNaN(storedDepthI) || Float.isNaN(storedDepthD) || Float.isNaN(storedDepthA))
+    {
+      throw new Exception();
+    }
+
+    yawP.setValue(storedYawP);
+    yawI.setValue(storedYawI);
+    yawD.setValue(storedYawD);
+    yawAntiwindup.setValue(storedYawA);
+
+    pitchP.setValue(storedPitchP);
+    pitchI.setValue(storedPitchI);
+    pitchD.setValue(storedPitchD);
+    pitchAntiwindup.setValue(storedPitchA);
+    
+    rollP.setValue(storedRollP);
+    rollI.setValue(storedRollI);
+    rollD.setValue(storedRollD);
+    rollAntiwindup.setValue(storedRollA);
+    
+    depthP.setValue(storedDepthP);
+    depthI.setValue(storedDepthI);
+    depthD.setValue(storedDepthD);
+    depthAntiwindup.setValue(storedDepthA);
+  }
+  catch(Exception e)
+  {
+    println("Error loading gains");
+    println("Invalid format perhaps?");
+  }
 }
 
 void arm()
@@ -1150,4 +1349,17 @@ void eepromLoad()
   if(notConnected()) return;
 
   port.write("L\nG\n");
+}
+
+void stop()
+{
+  try
+  {
+    datalog.flush();
+    datalog.close();
+  }
+  catch (Exception e)
+  {
+    return;
+  }
 }
